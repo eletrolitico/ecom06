@@ -1,5 +1,5 @@
 begin
     int a;
-    a =;
+    a = 3;
     output(a);
 end
