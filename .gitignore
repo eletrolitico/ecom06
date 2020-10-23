@@ -1,0 +1,4 @@
+*.output
+*tab*
+lex.yy.c
+ghd
