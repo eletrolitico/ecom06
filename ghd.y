@@ -1,6 +1,26 @@
 %{
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h> /* For malloc in symbol table */
+#include <string.h> /* For strcmp in symbol table */
+#include <stdio.h> /* For error messages */
+#include "ST.h" /* The Symbol Table Module */
+#define YYDEBUG 1 /* For debugging */
+int errors = 0;
+install(char *sym_name)
+{ 
+  symrec *s;
+  s = getsym(sym_name);
+  if (s == 0)
+    s = putsym (sym_name);
+  else { 
+    errors++;
+    printf( "%s is already defined\n", sym_name);
+  }
+}
+context_check( char *sym_name )
+{ 
+  if (getsym(sym_name) == 0)
+  printf( "%s is an undeclared identifier\n", sym_name);
+}
 
 extern int yylex();
 extern int yyparse();
@@ -57,6 +77,8 @@ void yyerror(const char* s);
 
 %token UNKNOWN
 
+%type<ident> tipo
+
 %start program
 
 
@@ -75,13 +97,13 @@ exp: value | exp ops exp | P_OPEN exp P_CLOSE;
 intVar: VARIABLE | INTEGER;
 opMod: intVar MOD intVar;
 
-tipo: T_INT | T_CHAR | T_FLOAT;
+tipo: T_INT {$$ = "int";} | T_CHAR {$$ = "char";} | T_FLOAT {$$ = "float";};
 
-var: tipo VARIABLE SEMICOLON;
+var: tipo VARIABLE SEMICOLON {printf("Var dec: type: %s, ident: %s\n", $1,$2);};
 
 r_value: exp | logicOp | opMod;
 
-attribution: VARIABLE ASSIGNMENT r_value SEMICOLON {printf("Var attrib: %s", $1);};
+attribution: VARIABLE ASSIGNMENT r_value SEMICOLON {printf("Var attrib: %s\n", $1);};
 
 output: OUT P_OPEN r_value P_CLOSE SEMICOLON;
 input: INP P_OPEN VARIABLE P_CLOSE SEMICOLON;
@@ -100,6 +122,7 @@ else: if ELSE B_BLOCK statements E_BLOCK;
 loop: WHILE P_OPEN logicOp P_CLOSE B_BLOCK statements E_BLOCK;
 
 %%
+
 
 int main() {
 	yyin = stdin;
