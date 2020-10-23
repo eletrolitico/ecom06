@@ -46,7 +46,7 @@ letter        [a-zA-Z]
 "while"             {return WHILE;}
 
 {letter}({letter}|{digit})* {
-                       yylval.ident = yytext;
+                       yylval.ident = strdup(yytext);
                        return VARIABLE;}
 
 {letter}|{digit}       {yylval.char_val = yytext[0];
