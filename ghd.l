@@ -2,6 +2,10 @@
 #include <stdio.h>
 #define YY_DECL int yylex()
 #include "ghd.tab.h"
+
+void extern yyerror(const char* s);
+int yyCountLine = 1;
+
 %}
 
 digit         [0-9]
@@ -54,9 +58,10 @@ letter        [a-zA-Z]
 -?{digit}+\.{digit}+   { yylval.real_val = atof(yytext);
                          return REAL;}
 
-[ \t\n\r]            /* skip whitespace */
-.                    { printf("Unknown character [%c]\n",yytext[0]);
-                       return UNKNOWN;    }
+[\n]                    {yyCountLine++;}
+[ \t\r]                /* skip whitespace */
+.                       { yyerror("character unrecognized"); }
+
 %%
 
 int yywrap(void){return 1;}

@@ -26,6 +26,8 @@ extern int yylex();
 extern int yyparse();
 extern FILE* yyin;
 
+extern int yyCountLine; 
+
 void yyerror(const char* s);
 %}
 
@@ -135,6 +137,6 @@ int main() {
 }
 
 void yyerror(const char* s) {
-	fprintf(stderr, "Parse error: %s\n", s);
+	fprintf(stderr, "\nERROR ON LINE %d - error: %s\n", yyCountLine, s);
 	exit(1);
 }
