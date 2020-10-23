@@ -133,7 +133,7 @@ int main() {
 		yyparse();
 	} while(!feof(yyin));
 
-  fprintf(stderr, "ACCEPTED!");
+  fprintf(stderr, "ACCEPTED!\n\n");
 
 	return 0;
 }
