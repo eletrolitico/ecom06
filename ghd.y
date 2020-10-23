@@ -1,8 +1,12 @@
 %{
-  #include <stdio.h>
-  #include <math.h>
-  extern int yylex (void);
-  extern void yyerror (char const *);
+#include <stdio.h>
+#include <stdlib.h>
+
+extern int yylex();
+extern int yyparse();
+extern FILE* yyin;
+
+void yyerror(const char* s);
 %}
 
 %union {
@@ -31,8 +35,10 @@
 %token NOT
 %token ADD
 %token SUB
+%left ADD SUB
 %token MUL
 %token DIV
+%right MUL DIV
 %token MOD
 %token COLON
 %token SEMICOLON
@@ -51,11 +57,14 @@
 
 %token UNKNOWN
 
+%start program
+
 
 %%
 program: BEGINPROG statements ENDPROG;
 
-statements: attribution | var | if | else | loop | input | output;
+statements: statement | statements statement;
+statement: attribution | var | if | else | loop | input | output;
 
 value: INTEGER | VARIABLE | CHARACTER | REAL;
 
@@ -72,7 +81,7 @@ var: tipo VARIABLE SEMICOLON;
 
 r_value: exp | logicOp | opMod;
 
-attribution: VARIABLE ASSIGNMENT r_value SEMICOLON;
+attribution: VARIABLE ASSIGNMENT r_value SEMICOLON {printf("Var attrib: %s", $1);};
 
 output: OUT P_OPEN r_value P_CLOSE SEMICOLON;
 input: INP P_OPEN VARIABLE P_CLOSE SEMICOLON;
@@ -92,7 +101,17 @@ loop: WHILE P_OPEN logicOp P_CLOSE B_BLOCK statements E_BLOCK;
 
 %%
 
-int main(){
-    yyparse();
-    return 0;
+int main() {
+	yyin = stdin;
+
+	do {
+		yyparse();
+	} while(!feof(yyin));
+
+	return 0;
+}
+
+void yyerror(const char* s) {
+	fprintf(stderr, "Parse error: %s\n", s);
+	exit(1);
 }

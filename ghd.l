@@ -1,6 +1,7 @@
 %{
+#include <stdio.h>
+#define YY_DECL int yylex()
 #include "ghd.tab.h"
-void extern yyerror(char const *);
 %}
 
 digit         [0-9]
@@ -59,7 +60,3 @@ letter        [a-zA-Z]
 %%
 
 int yywrap(void){return 1;}
-
-void yyerror(char const * err){
-    printf("Error: %s",err);
-}
