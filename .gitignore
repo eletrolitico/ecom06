@@ -1,5 +1,7 @@
 *.output
-*tab*
+*.out
+*.tab*
 lex.yy.c
 ghd
 ghd.exe
+out.s

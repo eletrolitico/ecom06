@@ -1,37 +1,54 @@
+%option noyywrap
+
 %{
-#include <stdio.h>
-#define YY_DECL int yylex()
-#include "ghd.tab.h"
-
-void extern yyerror(const char* s);
-int yyCountLine = 1;
-
+    #include <stdio.h>
+	#include <stdlib.h>
+	#include <string.h>
+	#include "symtab.h"
+	#include "semantics.h"
+	#include "ast.h"
+	#include "ghd.tab.h"
+	extern FILE *yyin;
+	extern FILE *yyout;
+	
+	int lineno = 1; // initialize to 1
+	void ret_print(char *token_type);
+	void yyerror();
 %}
 
-digit         [0-9]
-letter        [a-zA-Z]
+letter 		[a-zA-Z]
+digit 		[0-9]
+alnum 		{letter}|{digit}
+print		[ -~]
+
+ID 			{letter}+{alnum}*
+ICONST		"0"|[0-9]{digit}*
+FCONST		"0"|{digit}*"."{digit}+
+CCONST		(\'{print}\')|(\'\\[nftrbv]\')
+STRING		\"{print}*\"
 
 %%
 "begin"             {return BEGINPROG;}
 "end"               {return ENDPROG;}
-"="                 {return ASSIGNMENT;}
-"=="                {return EQU;}
-">"                 {return GREATER;}
-">="                {return GREATEREQU;}
-"<"                 {return LESS;}
-"<="                {return LESSEQU;}
-"!="                {return DIFFERENT;}
-"and"               {return AND;}
-"or"                {return OR;}
-"xor"               {return XOR;}
-"not"               {return NOT;}
-"+"                 {return ADD;}
-"-"                 {return SUB;}
-"*"                 {return MUL;}
-"/"                 {return DIV;}
-"mod"               {return MOD;}
-":"                 {return COLON;}
-";"                 {return SEMICOLON;}
+
+"+"					{ yylval.val.ival = ADD; return ADDOP; }
+"-"					{ yylval.val.ival = SUB; return ADDOP; }
+"*"					{ return MULOP; }
+"/"					{ return DIVOP; }
+"mod"               {return MODOP;}
+"or"				{ return OROP; }
+"and"				{ return ANDOP; }
+"xor"				{ return XOROP; }
+"not"				{ return NOTOP; }
+"=="				{ yylval.val.ival = EQUAL; return EQUOP; }
+"!="				{ yylval.val.ival = NOT_EQUAL; return EQUOP; }
+">"					{ yylval.val.ival = GREATER; return RELOP; }
+"<"					{ yylval.val.ival = LESS; return RELOP; }
+">="				{ yylval.val.ival = GREATER_EQUAL; return RELOP; }
+"<="				{ yylval.val.ival = LESS_EQUAL; return RELOP; }
+
+"="                 {return ASSIGN;}
+";"                 {return SEMI;}
 "("                 {return P_OPEN;}
 ")"                 {return P_CLOSE;}
 "{"                 {return B_BLOCK;}
@@ -45,23 +62,22 @@ letter        [a-zA-Z]
 "else"              {return ELSE;}
 "while"             {return WHILE;}
 
-{letter}({letter}|{digit})* {
-                       yylval.ident = strdup(yytext);
-                       return VARIABLE;}
+{ID} 			{
+					insert(yytext, strlen(yytext), UNDEF, lineno);
+					yylval.symtab_item = lookup(yytext);
+					return ID;
+				}
+{ICONST} 		{ yylval.val.ival = atoi(yytext); return ICONST; }
+{FCONST} 		{ yylval.val.fval = atof(yytext); return FCONST; }
+{CCONST} 		{ yylval.val.cval = yytext[1];    return CCONST; }
+{STRING} 		{ 
+				  add_to_str_messages(yytext);
+				  yylval.val.sval = malloc(yyleng * sizeof(char));
+				  strcpy(yylval.val.sval, yytext);  return STRING;
+				}
 
-"'"{letter}|{digit}"'"       {yylval.char_val = yytext[0];
-                        return CHARACTER;}
-
--?{digit}+             { yylval.int_val = atoi(yytext);
-                       return INTEGER;}
-
--?{digit}+\.{digit}+   { yylval.real_val = atof(yytext);
-                         return REAL;}
-
-[\n]                    {yyCountLine++;}
-[ \t\r]                /* skip whitespace */
+"\n"                    {lineno++;}
+[ \t\r\f]+              /* skip whitespace */
 .                       { yyerror("character unrecognized"); }
 
 %%
-
-int yywrap(void){return 1;}
