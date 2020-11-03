@@ -49,7 +49,7 @@ letter        [a-zA-Z]
                        yylval.ident = strdup(yytext);
                        return VARIABLE;}
 
-{letter}|{digit}       {yylval.char_val = yytext[0];
+"'"{letter}|{digit}"'"       {yylval.char_val = yytext[0];
                         return CHARACTER;}
 
 -?{digit}+             { yylval.int_val = atoi(yytext);
