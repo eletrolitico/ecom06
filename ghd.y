@@ -164,7 +164,9 @@ output: OUT P_OPEN expression P_CLOSE SEMICOLON
 	{
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = OUT;
+		$3->reg = 'a';
 		$$->lookahead = $3;
+		$$->tipo = $3->tipo;
 		$$->esq = NULL;
 		$$->dir = NULL;
 	}
@@ -426,16 +428,29 @@ int main (int argc, char *argv[]){
 
 	yyout = fopen("out.s","w");
 
-	fprintf(yyout,"section .text\n");
-	fprintf(yyout,"\tglobal\t_start\n");
+	fprintf(yyout,"\tglobal\tmain\n");
+	fprintf(yyout,"\textern\tprintf\n");
+	fprintf(yyout,"\textern\tscanf\n");
+	fprintf(yyout,"\nsection .data\n");
+	fprintf(yyout,"intFmt\tdb\t\"%%d\",10,0\n");
+	fprintf(yyout,"charFmt\tdb\t\"%%c\",10,0\n");
+	fprintf(yyout,"floatFmt\tdb\t\"%%f\",10,0\n");
+	fprintf(yyout,"intRd\tdb\t\"%%d\",0\n");
+	fprintf(yyout,"charRd\tdb\t\"%%c\",0\n");
+	fprintf(yyout,"floatRd\tdb\t\"%%f\",0\n");
 	fprintf(yyout,"\nsection .bss\n");
 	fprintf(yyout,"tempvar1:\tRESD\t1\n");
 	fprintf(yyout,"tempvar2:\tRESD\t1\n\n");
 	imprime(rootDecl);
-	fprintf(yyout,"\nsection .text\n_start:\n");
+	fprintf(yyout,"\nsection .text\nmain:\n");
+	fprintf(yyout,"\tPUSH\tEBP\n");
+	fprintf(yyout,"\tMOV\tEBP,ESP\n\n");
 	imprime(rootStat);
-	fprintf(yyout,"\n\tMOV\tEAX,1\n");
+	fprintf(yyout,"\n\tMOV\tEBX,0\n");
+	fprintf(yyout,"\tMOV\tEAX,1\n");
 	fprintf(yyout,"\tINT\t0x80\n");
+	
+	
 
 	fclose(yyout);
 

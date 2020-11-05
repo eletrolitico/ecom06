@@ -31,9 +31,13 @@ void imprime(node *n)
 
     case ASSIGN:
         imprime(n->lookahead);
-        if (n->tipo != FLOAT)
+        if (n->tipo == INT)
             fprintf(yyout, "\tMOV\t[%s],EAX\n", n->id);
-        else
+
+        if (n->tipo == CHAR)
+            fprintf(yyout, "\tMOV\tbyte [%s],AL\n", n->id);
+
+        if (n->tipo == FLOAT)
         {
             fprintf(yyout, "\tMOV\tEAX,[tempvar1]\n", n->id);
             fprintf(yyout, "\tMOV\t[%s],EAX\n", n->id);
@@ -55,16 +59,34 @@ void imprime(node *n)
 
     case CCONST:
         if (n->reg == 'a')
-            fprintf(yyout, "\tMOVZX\tEAX,byte '%c'\n", n->val.cval);
+            fprintf(yyout, "\tMOV\tAL,byte '%c'\n", n->val.cval);
         else
-            fprintf(yyout, "\tMOVZX\tEBX,byte '%c'\n", n->val.cval);
+            fprintf(yyout, "\tMOV\tAL,byte '%c'\n", n->val.cval);
         break;
 
     case VAR:
-        if (n->reg == 'a')
-            fprintf(yyout, "\tMOV\tEAX,[%s]\n", n->id);
+        if (n->tipo != FLOAT)
+        {
+
+            if (n->reg == 'a')
+                fprintf(yyout, "\tMOV\tEAX,[%s]\n", n->id);
+            else
+                fprintf(yyout, "\tMOV\tEBX,[%s]\n", n->id);
+        }
         else
-            fprintf(yyout, "\tMOV\tEBX,[%s]\n", n->id);
+        {
+            if (n->reg == 'a')
+            {
+
+                fprintf(yyout, "\tMOV\tEAX,[%s]\n", n->id);
+                fprintf(yyout, "\tMOV\t[tempvar1],EAX\n", n->id);
+            }
+            else
+            {
+                fprintf(yyout, "\tMOV\tEBX,[%s]\n", n->id);
+                fprintf(yyout, "\tMOV\t[tempvar2],EBX\n", n->id);
+            }
+        }
         break;
 
     case EXPS:
@@ -90,14 +112,17 @@ void imprime(node *n)
                 fprintf(yyout, "\tMOV\t[tempvar2],EAX\n");
             else
                 fprintf(yyout, "\tMOV\t[tempvar2],EBX\n");
+
+            fprintf(yyout, "\tFLD\tdword [tempvar1]\n");
             fprintf(yyout, "\tFILD\tdword [tempvar2]\n");
-            fprintf(yyout, "\t%s\tdword [tempvar1]\n", msg);
+            fprintf(yyout, "\tFSTP\tdword [tempvar2]\n");
+            fprintf(yyout, "\t%s\tdword [tempvar2]\n", msg);
             if (n->reg == 'a')
                 fprintf(yyout, "\tFSTP\tdword [tempvar1]\n");
             else
                 fprintf(yyout, "\tFSTP\tdword [tempvar2]\n");
         }
-        else if (n->lookahead->tipo != FLOAT) // b é float
+        else if (n->lookahead->tipo != FLOAT) // n é float
         {
             n->tipo = FLOAT;
             getFloatOp(msg, n->op);
@@ -122,7 +147,62 @@ void imprime(node *n)
         }
 
         break;
+    case OUT:
+        imprime(n->lookahead);
+        switch (n->tipo)
+        {
+        case INT:
+            fprintf(yyout, "\tPUSH\tEAX\n");
+            fprintf(yyout, "\tPUSH\tintFmt\n");
+            fprintf(yyout, "\tCALL\tprintf\n");
+            fprintf(yyout, "\tADD\tESP,8\n");
+            break;
+        case CHAR:
+            fprintf(yyout, "\tPUSH\tEAX\n");
+            fprintf(yyout, "\tPUSH\tcharFmt\n");
+            fprintf(yyout, "\tCALL\tprintf\n");
+            fprintf(yyout, "\tADD\tESP,8\n");
+            break;
+        case FLOAT:
+            fprintf(yyout, "\tSUB\tESP,8\n");
+            fprintf(yyout, "\tMOV\t[tempvar1],EAX\n");
+            fprintf(yyout, "\tFLD\tdword [tempvar1]\n");
+            fprintf(yyout, "\tFSTP\tqword [ESP]\n");
+            fprintf(yyout, "\tPUSH\tfloatFmt\n");
+            fprintf(yyout, "\tCALL\tprintf\n");
+            fprintf(yyout, "\tADD\tESP,12\n");
+            break;
 
+        default:
+            break;
+        }
+        break;
+    case INP:
+        switch (n->tipo)
+        {
+        case INT:
+            fprintf(yyout, "\tPUSH\t%s\n", n->id);
+            fprintf(yyout, "\tPUSH\tintRd\n");
+            fprintf(yyout, "\tCALL\tscanf\n");
+            fprintf(yyout, "\tADD\tESP,8\n");
+            break;
+        case CHAR:
+            fprintf(yyout, "\tPUSH\t%s\n", n->id);
+            fprintf(yyout, "\tPUSH\tcharRd\n");
+            fprintf(yyout, "\tCALL\tscanf\n");
+            fprintf(yyout, "\tADD\tESP,8\n");
+            break;
+        case FLOAT:
+            fprintf(yyout, "\tPUSH\t%s\n", n->id);
+            fprintf(yyout, "\tPUSH\tfloatRd\n");
+            fprintf(yyout, "\tCALL\tscanf\n");
+            fprintf(yyout, "\tADD\tESP,8\n");
+            break;
+
+        default:
+            break;
+        }
+        break;
     default:
         fprintf(yyout, "Esqueceu de implementar: %d", n->token);
         break;

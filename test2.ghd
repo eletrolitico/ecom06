@@ -1,0 +1,6 @@
+begin
+    float a;
+    input(a);
+    a = a - 2;
+    output(a);
+end
