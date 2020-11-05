@@ -34,7 +34,7 @@
 %token ID
 %token ICONST FCONST CCONST
 
-%token EXP VAR TAIL
+%token EXP VAR TAIL EXPS LOP
 
 /* precedencies and associativities */
 %right ASSIGN
@@ -61,7 +61,7 @@
 %type <node> input
 %type <node> output
 %type <node> logicOp
-%type <ival> ops lOps
+%type <ival> ops lOps relOps
 
 %start program
 
@@ -98,6 +98,7 @@ declaration: type ID SEMICOLON
 		$$->token = ID;
 		$$->tipo = $1;
 		$$->id = yylval.id;
+		insert(yylval.id,$1);
 		$$->esq = NULL;
 		$$->dir = NULL;
 	}
@@ -173,6 +174,7 @@ input: INP P_OPEN ID P_CLOSE SEMICOLON
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = INP;
 		$$->id = yylval.id;
+		$$->tipo = lookup(yylval.id);
 		$$->esq = NULL;
 		$$->dir = NULL;
 	}
@@ -208,7 +210,8 @@ loop: WHILE P_OPEN logicOp P_CLOSE tail
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = WHILE;
 		$$->lookahead = $3;
-		$$->esq = $5;
+		$$->lookahead1 = $5;
+		$$->esq = NULL;
 		$$->dir = NULL;
 	}
 ;
@@ -250,21 +253,27 @@ expression:
 	expression ops expression 
 	{
 		$$ = (node*)malloc(sizeof(node));
-		$$->token = $2;
-		$$->esq = $1;
-		$$->dir = $3;
+		$$->token = EXPS;
+		$$->op = $2;
+		$$->lookahead = $1;
+		$$->lookahead1 = $3;
+		$$->esq = NULL;
+		$$->dir = NULL;
 	}
 	| P_OPEN expression P_CLOSE
 	{
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = EXP;
-		$$->esq = $2;
+		$$->lookahead = $2;
+		$$->esq = NULL;
 		$$->dir = NULL;
 	}
 	| ID
 	{
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = VAR;
+		$$->id = yylval.id;
+		$$->tipo = lookup(yylval.id);
 		$$->esq = NULL;
 		$$->dir = NULL;
 	}
@@ -287,7 +296,10 @@ lOps:
 	{
 		$$ = XOR;
 	}
-	|EQU
+;
+
+relOps:
+	EQU
 	{
 		$$ = EQU;
 	}
@@ -317,11 +329,23 @@ logicOp:
 	logicOp lOps logicOp
 	{
 		$$ = (node*)malloc(sizeof(node));
-		$$->token = $2;
+		$$->token = LOP;
+		$$->op = $2;
 		$$->esq = $1;
 		$$->dir = $3;
 	}
 	|NOT logicOp
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = NOT;
+		$$->esq = $2;
+		$$->dir = NULL;
+	}
+	|expression relOps expression
+	{
+		$$ = $1;
+	}
+	|NOT expression
 	{
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = NOT;
@@ -340,6 +364,7 @@ constant:
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = ICONST;
 		$$->val = yylval.val;
+		$$->tipo = INT;
 		$$->esq = NULL;
 		$$->dir = NULL;
 	}
@@ -348,6 +373,7 @@ constant:
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = FCONST;
 		$$->val = yylval.val;
+		$$->tipo = FLOAT;
 		$$->esq = NULL;
 		$$->dir = NULL;
 	}
@@ -356,6 +382,7 @@ constant:
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = CCONST;
 		$$->val = yylval.val;
+		$$->tipo = CHAR;
 		$$->esq = NULL;
 		$$->dir = NULL;
 	}
@@ -366,6 +393,8 @@ assigment: ID {idTemp = yylval.id;} ASSIGN expression SEMICOLON
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = ASSIGN;
 		$$->id = idTemp;
+		$$->tipo = lookup(idTemp);
+		$4->reg = 'a';
 		$$->lookahead = $4;
 		$$->esq = NULL;
 		$$->dir = NULL;
@@ -395,10 +424,20 @@ int main (int argc, char *argv[]){
 	
 	printf("Parsing finished!\n");
 
-	fprintf(yyout,"#include <iostream>\n\nint main()\n{\n");
+	yyout = fopen("out.s","w");
+
+	fprintf(yyout,"section .text\n");
+	fprintf(yyout,"\tglobal\t_start\n");
+	fprintf(yyout,"\nsection .bss\n");
+	fprintf(yyout,"tempvar1:\tRESD\t1\n");
+	fprintf(yyout,"tempvar2:\tRESD\t1\n\n");
 	imprime(rootDecl);
+	fprintf(yyout,"\nsection .text\n_start:\n");
 	imprime(rootStat);
-	fprintf(yyout,"\treturn 0;\n}\n");
+	fprintf(yyout,"\n\tMOV\tEAX,1\n");
+	fprintf(yyout,"\tINT\t0x80\n");
+
+	fclose(yyout);
 
 	
 	

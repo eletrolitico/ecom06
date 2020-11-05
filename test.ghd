@@ -1,4 +1,8 @@
 begin
     int a;
+    int b;
+    float l;
     a = 3;
+    b = 2-a;
+    l = 2.77 + b;
 end

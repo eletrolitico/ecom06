@@ -60,7 +60,6 @@ CCONST		(\'{print}\')|(\'\\[nftrbv]\')
 
 {ID} 			{
 					yylval.id = strdup(yytext);
-					printf("ID na linha %d: %s\n",lineno,yylval.id);
 					return ID;
 				}
 {ICONST} 		{ yylval.val.ival = atoi(yytext); return ICONST; }

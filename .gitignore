@@ -1,4 +1,5 @@
 *.output
+out*
 *.tab*
 lex.yy.c
 ghd
