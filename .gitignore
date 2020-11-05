@@ -1,7 +1,6 @@
 *.output
-*.out
 *.tab*
 lex.yy.c
 ghd
 ghd.exe
-out.s
+.vscode

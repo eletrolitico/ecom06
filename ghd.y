@@ -1,9 +1,5 @@
 %{
-	#include "semantics.c"
-	#include "symtab.c"
 	#include "ast.h"
-	#include "ast.c"
-	#include "code_generation.c"
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <string.h>
@@ -11,46 +7,51 @@
 	extern FILE *yyout;
 	extern int lineno;
 	extern int yylex();
+
+	char *idTemp;
+
+	extern node *rootDecl;
+	extern node *rootStat;
+
 	void yyerror();
-	
 %}
 
 /* YYSTYPE union */
 %union{
 	Value val;
-	sym_lst *sym_item;
-	// for declarations
-	int data_type;
-	int const_type;
+	char *id;
+	node *node;
+	int ival;
 }
 
 /* token definition */
 %token BEGINPROG ENDPROG
-%token<val> T_CHAR T_INT T_FLOAT IF ELSE WHILE INP OUT
-%token<val> ADDOP MULOP DIVOP MODOP OROP ANDOP XOROP NOTOP EQUOP RELOP
-%token<val> P_OPEN P_CLOSE B_BLOCK E_BLOCK SEMICOLON ASSIGN REFER
-%token <symtab_item> ID
-%token <val> 	ICONST
-%token <val>  FCONST
-%token <val> 	CCONST
-%token <val>  STRING
+%token T_CHAR T_INT T_FLOAT IF ELSE WHILE INP OUT
+%token ADD MUL DIV MOD
+%token OR AND XOR NOT
+%token EQU DIF GRT LES GEQ LEQ
+%token P_OPEN P_CLOSE B_BLOCK E_BLOCK SEMICOLON ASSIGN REFER
+%token ID
+%token ICONST FCONST CCONST
+
+%token EXP VAR TAIL
 
 /* precedencies and associativities */
 %right ASSIGN
-%left OROP
-%left ANDOP
-%left EQUOP
-%left RELOP
-%left ADDOP
-%left SUBOP
-%left MULOP DIVOP
-%right NOTOP INCR REFER MINUS
+%left OR
+%left AND
+%left EQU
+%left REL
+%left ADD
+%left SUB
+%left MUL DIV
+%right NOT MINUS
 %left P_OPEN P_CLOSE B_BLOCK E_BLOCK
 
 /* rule (non-terminal) definitions */
 %type <node> program
 %type <node> declarations declaration
-%type <data_type> type
+%type <ival> type
 %type <node> constant
 %type <node> expression
 %type <node> statement assigment
@@ -59,79 +60,317 @@
 %type <node> loop
 %type <node> input
 %type <node> output
+%type <node> logicOp
+%type <ival> ops lOps
 
 %start program
 
 %%
 
-program: BEGINPROG
-         declarations
-         statements
-         ENDPROG;
-
-declarations: declarations declaration
-			| declaration
+program: BEGINPROG declarations statements ENDPROG
+		 {
+			 rootDecl = $2;
+			 rootStat = $3;
+		 }
 ;
 
-declaration: type ID SEMICOLON;
+declarations: 
+	declarations declaration
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = 0;
+		$$->esq = $1;
+		$$->dir = $2;
+	}
+	| declaration
+	{
+		$$ = $1;
+	}
+	|
+	{
+		$$ = NULL;
+	}
+;
 
-type: T_INT   
-	| T_CHAR  
-	| T_FLOAT 
+declaration: type ID SEMICOLON
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = ID;
+		$$->tipo = $1;
+		$$->id = yylval.id;
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
+;
+
+type: 
+	T_INT
+	{
+		$$ = INT;
+	}   
+	| T_CHAR
+	{
+		$$ = CHAR;
+	}  
+	| T_FLOAT
+	{
+		$$ = FLOAT;
+	} 
 ;
 
 statements:
 	statements statement
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = 0;
+		$$->esq = $1;
+		$$->dir = $2;
+	}
 	| statement
+	{
+		$$ = $1;
+	}
+	|
+	{
+		$$ = NULL;
+	}
 ;
 
 statement:
-	  if
+	if
+	{
+		$$ = $1;
+	}
 	| loop
+	{
+		$$ = $1;
+	}
 	| assigment
+	{
+		$$ = $1;
+	}
 	| output
+	{
+		$$ = $1;
+	}
 	| input
+	{
+		$$ = $1;
+	}
 ;
 
-output: OUT P_OPEN expression P_CLOSE SEMICOLON;
-input: INP P_OPEN ID P_CLOSE SEMICOLON;
+output: OUT P_OPEN expression P_CLOSE SEMICOLON
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = OUT;
+		$$->lookahead = $3;
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
+;
+input: INP P_OPEN ID P_CLOSE SEMICOLON
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = INP;
+		$$->id = yylval.id;
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
+;
 
-if:	IF P_OPEN expression P_CLOSE tail else;
+if:	IF P_OPEN logicOp P_CLOSE tail else
+{
+	$$ = (node*)malloc(sizeof(node));
+	$$->token = IF;
+	$$->lookahead = $3;
+	$$->lookahead1 = $5;
+	$$->esq = $6;
+	$$->dir = NULL;
+}
+;
 
 else:
 	ELSE tail
-	| 
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = ELSE;
+		$$->esq = $2;
+		$$->dir = NULL;
+	}
+	|
+	{
+		$$ = NULL;
+	}
 ;
 
-loop: WHILE P_OPEN expression P_CLOSE tail;
+loop: WHILE P_OPEN logicOp P_CLOSE tail
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = WHILE;
+		$$->lookahead = $3;
+		$$->esq = $5;
+		$$->dir = NULL;
+	}
+;
 
-tail: B_BLOCK statements E_BLOCK;
+tail: B_BLOCK statements E_BLOCK
+{
+	$$ = (node*)malloc(sizeof(node));
+	$$->token = TAIL;
+	$$->lookahead = $2;
+	$$->esq = NULL;
+	$$->dir = NULL;
+}
+;
+
+ops:
+	ADD
+	{
+		$$ = ADD;
+	}
+	|SUB
+	{
+		$$ = SUB;
+	}
+	|MUL
+	{
+		$$ = MUL;
+	}
+	|DIV
+	{
+		$$ = DIV;
+	}
+	|MOD
+	{
+		$$ = MOD;
+	}
+;
 
 expression:
-      expression ADDOP expression
-    | expression SUBOP expression
-	| expression MULOP expression
-	| expression DIVOP expression
-	| expression MODOP expression
-	| expression OROP expression
-	| expression ANDOP expression
-	| expression XOROP expression
-	| NOTOP expression
-	| expression EQUOP expression
-	| expression RELOP expression
+	expression ops expression 
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = $2;
+		$$->esq = $1;
+		$$->dir = $3;
+	}
 	| P_OPEN expression P_CLOSE
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = EXP;
+		$$->esq = $2;
+		$$->dir = NULL;
+	}
 	| ID
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = VAR;
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
 	| constant
-	| ADDOP constant %prec MINUS
-	
+	{
+		$$ = $1;
+	}
+;
+
+lOps:
+	OR
+	{
+		$$ = OR;
+	}
+	|AND
+	{
+		$$ = AND;
+	}
+	|XOR
+	{
+		$$ = XOR;
+	}
+	|EQU
+	{
+		$$ = EQU;
+	}
+	|DIF
+	{
+		$$ = DIF;
+	}
+	|GRT
+	{
+		$$ = GRT;
+	}
+	|LES
+	{
+		$$ = LES;
+	}
+	|GEQ
+	{
+		$$ = GEQ;
+	}
+	|LEQ
+	{
+		$$ = LEQ;
+	}
+;
+
+logicOp:
+	logicOp lOps logicOp
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = $2;
+		$$->esq = $1;
+		$$->dir = $3;
+	}
+	|NOT logicOp
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = NOT;
+		$$->esq = $2;
+		$$->dir = NULL;
+	}
+	|expression
+	{
+		$$ = $1;
+	}
 ;
 
 constant:
-	ICONST   
+	ICONST
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = ICONST;
+		$$->val = yylval.val;
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
 	| FCONST 
-	| CCONST;
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = FCONST;
+		$$->val = yylval.val;
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
+	| CCONST
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = CCONST;
+		$$->val = yylval.val;
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
+;
 
-assigment: ID ASSIGN expression SEMICOLON;
+assigment: ID {idTemp = yylval.id;} ASSIGN expression SEMICOLON
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = ASSIGN;
+		$$->id = idTemp;
+		$$->lookahead = $4;
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
+;
 
 
 %%
@@ -155,6 +394,12 @@ int main (int argc, char *argv[]){
 	fclose(yyin);
 	
 	printf("Parsing finished!\n");
+
+	fprintf(yyout,"#include <iostream>\n\nint main()\n{\n");
+	imprime(rootDecl);
+	imprime(rootStat);
+	fprintf(yyout,"\treturn 0;\n}\n");
+
 	
 	
 	return flag;

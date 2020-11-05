@@ -4,15 +4,12 @@
     #include <stdio.h>
 	#include <stdlib.h>
 	#include <string.h>
-	#include "symtab.h"
-	#include "semantics.h"
 	#include "ast.h"
 	#include "ghd.tab.h"
 	extern FILE *yyin;
 	extern FILE *yyout;
 	
 	int lineno = 1; // initialize to 1
-	void ret_print(char *token_type);
 	void yyerror();
 %}
 
@@ -30,21 +27,21 @@ CCONST		(\'{print}\')|(\'\\[nftrbv]\')
 "begin"             {return BEGINPROG;}
 "end"               {return ENDPROG;}
 
-"+"					{ return ADDOP; }
-"-"					{ return SUBOP; }
-"*"					{ return MULOP; }
-"/"					{ return DIVOP; }
-"mod"               { return MODOP; }
-"or"				{ return OROP;  }
-"and"				{ return ANDOP; }
-"xor"				{ return XOROP; }
-"not"				{ return NOTOP; }
-"=="				{ yylval.val.ival = EQUAL;         return EQUOP; }
-"!="				{ yylval.val.ival = NOT_EQUAL;     return EQUOP; }
-">"					{ yylval.val.ival = GREATER;       return RELOP; }
-"<"					{ yylval.val.ival = LESS;          return RELOP; }
-">="				{ yylval.val.ival = GREATER_EQUAL; return RELOP; }
-"<="				{ yylval.val.ival = LESS_EQUAL;    return RELOP; }
+"+"					{ return ADD; }
+"-"					{ return SUB; }
+"*"					{ return MUL; }
+"/"					{ return DIV; }
+"mod"               { return MOD; }
+"or"				{ return OR;  }
+"and"				{ return AND; }
+"xor"				{ return XOR; }
+"not"				{ return NOT; }
+"=="				{ return EQU; }
+"!="				{ return DIF; }
+">"					{ return GRT; }
+"<"					{ return LES; }
+">="				{ return GEQ; }
+"<="				{ return LEQ; }
 
 "="                 {return ASSIGN;}
 ";"                 {return SEMICOLON;}
@@ -62,7 +59,8 @@ CCONST		(\'{print}\')|(\'\\[nftrbv]\')
 "while"             {return WHILE;}
 
 {ID} 			{
-					yylval.sym_item = insert(strdup(yytext), lineno);
+					yylval.id = strdup(yytext);
+					printf("ID na linha %d: %s\n",lineno,yylval.id);
 					return ID;
 				}
 {ICONST} 		{ yylval.val.ival = atoi(yytext); return ICONST; }

@@ -1,35 +1,32 @@
 #ifndef AST_H
 #define AST_H
 
-typedef enum Arithm_op
+typedef union
 {
-	ADD,
-	SUB,
-	MUL,
-	DIV,
-	MOD,
-} Arithm_op;
+	int ival;
+	float fval;
+	char cval;
+} Value;
 
-typedef enum Bool_op
+typedef enum
 {
-	OR,
-	AND,
-	XOR,
-	NOT
-} Bool_op;
+	INT,
+	FLOAT,
+	CHAR,
+} TipoVar;
 
-typedef enum Rel_op
+typedef struct node
 {
-	GREATER,
-	LESS,
-	GREATER_EQUAL,
-	LESS_EQUAL
-} Rel_op;
+	int token;
+	Value val;
 
-typedef enum Equ_op
-{
-	EQUAL,
-	NOT_EQUAL
-} Equ_op;
+	//para vars
+	TipoVar tipo;
+	char *id;
+
+	struct node *esq, *dir, *lookahead, *lookahead1;
+} node;
+
+void imprime(node *n);
 
 #endif
