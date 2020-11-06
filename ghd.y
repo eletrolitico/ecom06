@@ -13,7 +13,7 @@
 	extern node *rootDecl;
 	extern node *rootStat;
 
-	void yyerror();
+	void yyerror(char *msg);
 %}
 
 /* YYSTYPE union */
@@ -406,9 +406,9 @@ assigment: ID {idTemp = yylval.id;} ASSIGN expression SEMICOLON
 
 %%
 
-void yyerror ()
+void yyerror (char *msg)
 {
-  fprintf(stderr, "Syntax error at line %d\n", lineno);
+  fprintf(stderr, "Error - %s. Line %d\n", msg, lineno);
   exit(1);
 }
 
@@ -441,11 +441,15 @@ int main (int argc, char *argv[]){
 	fprintf(yyout,"\nsection .bss\n");
 	fprintf(yyout,"tempvar1:\tRESD\t1\n");
 	fprintf(yyout,"tempvar2:\tRESD\t1\n\n");
+
 	imprime(rootDecl);
+
 	fprintf(yyout,"\nsection .text\nmain:\n");
 	fprintf(yyout,"\tPUSH\tEBP\n");
 	fprintf(yyout,"\tMOV\tEBP,ESP\n\n");
+
 	imprime(rootStat);
+
 	fprintf(yyout,"\n\tMOV\tEBX,0\n");
 	fprintf(yyout,"\tMOV\tEAX,1\n");
 	fprintf(yyout,"\tINT\t0x80\n");

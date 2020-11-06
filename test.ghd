@@ -1,13 +1,3 @@
 begin
-    int a;
-    int b;
-    char c;
-    float l;
-    a = 3;
-    b = 2-a;
-    l = 2.77 + b;
-    c = 'f';
-    output(l);
-    output(b);
-    output(c);
+    int a = 3;
 end
