@@ -1,6 +1,7 @@
 begin
     float a;
-    input(a);
-    a = a - 2;
-    output(a);
+    float b;
+    a = 3;
+    b = 5.20;
+    output(a < b);
 end

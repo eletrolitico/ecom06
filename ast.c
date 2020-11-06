@@ -193,31 +193,36 @@ void imprime(node *n)
         if (n->lookahead->tipo != FLOAT && n->lookahead1->tipo != FLOAT) // nenhum eh float
         {
             fprintf(yyout, "\tCMP\tEAX,EBX\n"); // compara
+            getCmp(msg, n->op);
         }
-        else if (n->lookahead1->tipo != FLOAT) // a é float
-        {
-            fprintf(yyout, "\tMOV\t[tempvar2],EBX\n");
-            fprintf(yyout, "\tFILD\tdword [tempvar2]\n");
-            fprintf(yyout, "\tFLD\tdword [tempvar1]\n");
-            fprintf(yyout, "\tFCOMIP\n");
-            fprintf(yyout, "\tFSTP\tST0\n");
+        else
+        { 
+            if (n->lookahead1->tipo != FLOAT) // a é float
+            {
+                fprintf(yyout, "\tMOV\t[tempvar2],EBX\n");
+                fprintf(yyout, "\tFILD\tdword [tempvar2]\n");
+                fprintf(yyout, "\tFLD\tdword [tempvar1]\n");
+                fprintf(yyout, "\tFCOMIP\n");
+                fprintf(yyout, "\tFSTP\tST0\n");
+            }
+            else if (n->lookahead->tipo != FLOAT) // b é float
+            {
+                fprintf(yyout, "\tFLD\tdword [tempvar2]\n");
+                fprintf(yyout, "\tMOV\t[tempvar1],EAX\n");
+                fprintf(yyout, "\tFILD\tdword [tempvar1]\n");
+                fprintf(yyout, "\tFCOMIP\n");
+                fprintf(yyout, "\tFSTP\tST0\n");
+            }
+            else // os 2 são float
+            {
+                fprintf(yyout, "\tFLD\tdword [tempvar2]\n");
+                fprintf(yyout, "\tFLD\tdword [tempvar1]\n");
+                fprintf(yyout, "\tFCOMIP\n");
+                fprintf(yyout, "\tFSTP\tST0\n");
+            }
+            getFloatCmp(msg, n->op);
         }
-        else if (n->lookahead->tipo != FLOAT) // b é float
-        {
-            fprintf(yyout, "\tFLD\tdword [tempvar2]\n");
-            fprintf(yyout, "\tMOV\t[tempvar1],EAX\n");
-            fprintf(yyout, "\tFILD\tdword [tempvar1]\n");
-            fprintf(yyout, "\tFCOMIP\n");
-            fprintf(yyout, "\tFSTP\tST0\n");
-        }
-        else // os 2 são float
-        {
-            fprintf(yyout, "\tFLD\tdword [tempvar2]\n");
-            fprintf(yyout, "\tFLD\tdword [tempvar1]\n");
-            fprintf(yyout, "\tFCOMIP\n");
-            fprintf(yyout, "\tFSTP\tST0\n");
-        }
-        getCmp(msg, n->op);
+
         fprintf(yyout, "\t%s\t%s\n", msg, la1); // se deu certo pula pro la1
 
         if (n->reg == 'a')
@@ -457,3 +462,35 @@ void getCmp(char *msg, int op)
         return;
     }
 }
+
+void getFloatCmp(char *msg, int op)
+{
+    switch (op)
+    {
+    case EQU:
+        strcpy(msg, "JE");
+        return;
+    case DIF:
+        strcpy(msg, "JNE");
+        return;
+    case GRT:
+        strcpy(msg, "JA");
+        return;
+    case GEQ:
+        strcpy(msg, "JAE");
+        return;
+    case LES:
+        strcpy(msg, "JB");
+        return;
+    case LEQ:
+        strcpy(msg, "JBE");
+        return;
+
+    default:
+        printf("Erro, getFloatCmp de %d", op);
+        strcpy(msg, "!ERROR!");
+        return;
+    }
+}
+
+
