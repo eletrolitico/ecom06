@@ -34,7 +34,7 @@
 %token ID
 %token ICONST FCONST CCONST
 
-%token EXP VAR TAIL EXPS LOP NEXP
+%token EXP VAR TAIL EXPS LOP ROP NEXP
 
 /* precedencies and associativities */
 %right ASSIGN
@@ -182,7 +182,7 @@ input: INP P_OPEN ID P_CLOSE SEMICOLON
 	}
 ;
 
-if:	IF P_OPEN logicOp P_CLOSE tail else
+if:	IF P_OPEN expression P_CLOSE tail else
 {
 	$$ = (node*)malloc(sizeof(node));
 	$$->token = IF;
@@ -207,7 +207,7 @@ else:
 	}
 ;
 
-loop: WHILE P_OPEN logicOp P_CLOSE tail
+loop: WHILE P_OPEN expression P_CLOSE tail
 	{
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = WHILE;
@@ -248,48 +248,6 @@ ops:
 	|MOD
 	{
 		$$ = MOD;
-	}
-;
-
-expression:
-	expression ops expression 
-	{
-		$$ = (node*)malloc(sizeof(node));
-		$$->token = EXPS;
-		$$->op = $2;
-		$$->lookahead = $1;
-		$$->lookahead1 = $3;
-		$$->esq = NULL;
-		$$->dir = NULL;
-	}
-	| P_OPEN expression P_CLOSE
-	{
-		$$ = (node*)malloc(sizeof(node));
-		$$->token = EXP;
-		$$->lookahead = $2;
-		$$->esq = NULL;
-		$$->dir = NULL;
-	}
-	| SUB expression
-	{
-		$$ = (node*)malloc(sizeof(node));
-		$$->token = NEXP;
-		$$->lookahead = $2;
-		$$->esq = NULL;
-		$$->dir = NULL;
-	}
-	| ID
-	{
-		$$ = (node*)malloc(sizeof(node));
-		$$->token = VAR;
-		$$->id = yylval.id;
-		$$->tipo = lookup(yylval.id);
-		$$->esq = NULL;
-		$$->dir = NULL;
-	}
-	| constant
-	{
-		$$ = $1;
 	}
 ;
 
@@ -335,38 +293,71 @@ relOps:
 	}
 ;
 
-logicOp:
-	logicOp lOps logicOp
+expression:
+	expression ops expression 
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = EXPS;
+		$$->op = $2;
+		$$->lookahead = $1;
+		$$->lookahead1 = $3;
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
+	|
+	expression relOps expression 
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = ROP;
+		$$->op = $2;
+		$$->lookahead = $1;
+		$$->lookahead1 = $3;
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
+	|
+	expression lOps expression 
 	{
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = LOP;
 		$$->op = $2;
-		$$->esq = $1;
-		$$->dir = $3;
-	}
-	|NOT logicOp
-	{
-		$$ = (node*)malloc(sizeof(node));
-		$$->token = NOT;
-		$$->esq = $2;
+		$$->lookahead = $1;
+		$$->lookahead1 = $3;
+		$$->esq = NULL;
 		$$->dir = NULL;
 	}
-	|expression relOps expression
-	{
-		$$ = $1;
-	}
-	|NOT expression
+	| P_OPEN expression P_CLOSE
 	{
 		$$ = (node*)malloc(sizeof(node));
-		$$->token = NOT;
-		$$->esq = $2;
+		$$->token = EXP;
+		$$->lookahead = $2;
+		$$->esq = NULL;
 		$$->dir = NULL;
 	}
-	|expression
+	| SUB expression
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = NEXP;
+		$$->lookahead = $2;
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
+	| ID
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = VAR;
+		$$->id = yylval.id;
+		$$->tipo = lookup(yylval.id);
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
+	| constant
 	{
 		$$ = $1;
 	}
 ;
+
+
 
 constant:
 	ICONST

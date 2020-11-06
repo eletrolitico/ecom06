@@ -12,8 +12,16 @@ node *rootStat;
 
 list_t *lista;
 
+int label = 0;
+
+void getLabel(char *c)
+{
+    sprintf(c, "PK%d", label++);
+}
+
 void imprime(node *n)
 {
+    char msg[5], la1[10], la2[10];
     if (!n)
         return;
     imprime(n->esq);
@@ -21,6 +29,7 @@ void imprime(node *n)
     switch (n->token)
     {
     case 0:
+        fprintf(yyout, "\n");
         break;
     case ID:
         if (n->tipo == CHAR)
@@ -31,23 +40,49 @@ void imprime(node *n)
 
     case ASSIGN:
         imprime(n->lookahead);
-        if (n->tipo == INT)
-            fprintf(yyout, "\tMOV\t[%s],EAX\n", n->id);
-
-        if (n->tipo == CHAR)
-            fprintf(yyout, "\tMOV\tbyte [%s],AL\n", n->id);
 
         if (n->tipo == FLOAT)
         {
-            fprintf(yyout, "\tMOV\tEAX,[tempvar1]\n", n->id);
-            fprintf(yyout, "\tMOV\t[%s],EAX\n", n->id);
+            if (n->lookahead->tipo == FLOAT)
+            {
+                fprintf(yyout, "\tMOV\tEAX,[tempvar1]\n", n->id);
+                fprintf(yyout, "\tMOV\t[%s],EAX\n", n->id);
+            }
+            else
+            {
+                fprintf(yyout, "\tMOV\t[tempvar1],EAX\n", n->id);
+                fprintf(yyout, "\tFILD\tdword [tempvar1]\n", n->id);
+                fprintf(yyout, "\tFSTP\tdword [tempvar1]\n", n->id);
+                fprintf(yyout, "\tMOV\tEAX,[tempvar1]\n", n->id);
+                fprintf(yyout, "\tMOV\t[%s],EAX\n", n->id);
+            }
+        }
+        else
+        {
+            if (n->lookahead->tipo == FLOAT)
+            {
+                fprintf(yyout, "\tFLD\tdword [tempvar1]\n", n->id);
+                if (n->tipo == INT)
+                    fprintf(yyout, "\tFISTP\tdword [%s]\n", n->id);
+
+                if (n->tipo == CHAR)
+                    fprintf(yyout, "\tFISTP\tbyte [%s]\n", n->id);
+            }
+            else
+            {
+                if (n->tipo == INT)
+                    fprintf(yyout, "\tMOV\t[%s],EAX\n", n->id);
+
+                if (n->tipo == CHAR)
+                    fprintf(yyout, "\tMOV\tbyte [%s],AL\n", n->id);
+            }
         }
         break;
     case ICONST:
         if (n->reg == 'a')
-            fprintf(yyout, "\tMOV\tEAX,$%d\n", n->val.ival);
+            fprintf(yyout, "\tMOV\tEAX,%d\n", n->val.ival);
         else
-            fprintf(yyout, "\tMOV\tEBX,$%d\n", n->val.ival);
+            fprintf(yyout, "\tMOV\tEBX,%d\n", n->val.ival);
         break;
 
     case FCONST:
@@ -59,9 +94,9 @@ void imprime(node *n)
 
     case CCONST:
         if (n->reg == 'a')
-            fprintf(yyout, "\tMOV\tAL,byte '%c'\n", n->val.cval);
+            fprintf(yyout, "\tMOV\tAL,'%c'\n", n->val.cval);
         else
-            fprintf(yyout, "\tMOV\tAL,byte '%c'\n", n->val.cval);
+            fprintf(yyout, "\tMOV\tBL,'%c'\n", n->val.cval);
         break;
 
     case VAR:
@@ -94,7 +129,6 @@ void imprime(node *n)
         n->lookahead1->reg = 'b';
         imprime(n->lookahead);
         imprime(n->lookahead1);
-        char msg[5];
 
         if (n->lookahead->tipo != FLOAT && n->lookahead1->tipo != FLOAT)
         {
@@ -147,6 +181,60 @@ void imprime(node *n)
         }
 
         break;
+    case ROP:
+        n->lookahead->reg = 'a';
+        n->lookahead1->reg = 'b';
+        imprime(n->lookahead);
+        imprime(n->lookahead1);
+
+        getLabel(la1);
+        getLabel(la2);
+        n->tipo = INT;
+        if (n->lookahead->tipo != FLOAT && n->lookahead1->tipo != FLOAT) // nenhum eh float
+        {
+            fprintf(yyout, "\tCMP\tEAX,EBX\n"); // compara
+        }
+        else if (n->lookahead1->tipo != FLOAT) // a é float
+        {
+            fprintf(yyout, "\tMOV\t[tempvar2],EBX\n");
+            fprintf(yyout, "\tFILD\tdword [tempvar2]\n");
+            fprintf(yyout, "\tFLD\tdword [tempvar1]\n");
+            fprintf(yyout, "\tFCOMIP\n");
+            fprintf(yyout, "\tFSTP\tST0\n");
+        }
+        else if (n->lookahead->tipo != FLOAT) // b é float
+        {
+            fprintf(yyout, "\tFLD\tdword [tempvar2]\n");
+            fprintf(yyout, "\tMOV\t[tempvar1],EAX\n");
+            fprintf(yyout, "\tFILD\tdword [tempvar1]\n");
+            fprintf(yyout, "\tFCOMIP\n");
+            fprintf(yyout, "\tFSTP\tST0\n");
+        }
+        else // os 2 são float
+        {
+            fprintf(yyout, "\tFLD\tdword [tempvar2]\n");
+            fprintf(yyout, "\tFLD\tdword [tempvar1]\n");
+            fprintf(yyout, "\tFCOMIP\n");
+            fprintf(yyout, "\tFSTP\tST0\n");
+        }
+        getCmp(msg, n->op);
+        fprintf(yyout, "\t%s\t%s\n", msg, la1); // se deu certo pula pro la1
+
+        if (n->reg == 'a')
+            fprintf(yyout, "\tMOV\tEAX,0\n"); // se n pulou resposta eh 0
+        else
+            fprintf(yyout, "\tMOV\tEBX,0\n"); // se n pulou resposta eh 0
+
+        fprintf(yyout, "\tJMP\t%s\n", la2); // pula pro final que eh la2
+
+        if (n->reg == 'a')
+            fprintf(yyout, "%s:\tMOV\tEAX,1\n", la1);
+        else
+            fprintf(yyout, "%s:\tMOV\tEBX,1\n", la1);
+
+        fprintf(yyout, "%s:\n", la2);
+        break;
+
     case OUT:
         imprime(n->lookahead);
         switch (n->tipo)
@@ -200,6 +288,48 @@ void imprime(node *n)
             break;
 
         default:
+            break;
+        }
+        break;
+    case NEXP:
+        if (n->lookahead->token == ICONST)
+        {
+            if (n->reg == 'a')
+                fprintf(yyout, "\tMOV\tEAX,-%d\n", n->lookahead->val.ival);
+            else
+                fprintf(yyout, "\tMOV\tEBX,-%d\n", n->lookahead->val.ival);
+            break;
+        }
+        else if (n->lookahead->token == CCONST)
+        {
+            if (n->reg == 'a')
+                fprintf(yyout, "\tMOV\tAL,-'%c'\n", n->lookahead->val.cval);
+            else
+                fprintf(yyout, "\tMOV\tBL,-'%c'\n", n->lookahead->val.cval);
+            break;
+        }
+        else
+        {
+            n->lookahead->reg = n->reg;
+            imprime(n->lookahead);
+            n->tipo = n->lookahead->tipo;
+
+            if (n->lookahead->tipo == FLOAT)
+            {
+                if (n->reg == 'a')
+                    fprintf(yyout, "\tXOR\tdword [tempvar1],0x80000000\n");
+
+                else
+                    fprintf(yyout, "\tXOR\tdword [tempvar2],0x80000000\n");
+            }
+            else
+            {
+                if (n->reg == 'a')
+                    fprintf(yyout, "\tNEGL\tEAX\n");
+
+                else
+                    fprintf(yyout, "\tNEGL\tEBX\n");
+            }
             break;
         }
         break;
@@ -268,6 +398,7 @@ void getOp(char *msg, int op)
         return;
 
     default:
+        printf("Erro, getop de %d", op);
         strcpy(msg, "!ERROR!");
         return;
     }
@@ -291,6 +422,37 @@ void getFloatOp(char *msg, int op)
         return;
 
     default:
+        printf("Erro, getfloatop de %d", op);
+        strcpy(msg, "!ERROR!");
+        return;
+    }
+}
+
+void getCmp(char *msg, int op)
+{
+    switch (op)
+    {
+    case EQU:
+        strcpy(msg, "JE");
+        return;
+    case DIF:
+        strcpy(msg, "JNE");
+        return;
+    case GRT:
+        strcpy(msg, "JG");
+        return;
+    case GEQ:
+        strcpy(msg, "JGE");
+        return;
+    case LES:
+        strcpy(msg, "JL");
+        return;
+    case LEQ:
+        strcpy(msg, "JLE");
+        return;
+
+    default:
+        printf("Erro, getcmp de %d", op);
         strcpy(msg, "!ERROR!");
         return;
     }
