@@ -34,7 +34,7 @@
 %token ID
 %token ICONST FCONST CCONST
 
-%token EXP VAR TAIL EXPS LOP
+%token EXP VAR TAIL EXPS LOP NEXP
 
 /* precedencies and associativities */
 %right ASSIGN
@@ -266,6 +266,14 @@ expression:
 	{
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = EXP;
+		$$->lookahead = $2;
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
+	| SUB expression
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = NEXP;
 		$$->lookahead = $2;
 		$$->esq = NULL;
 		$$->dir = NULL;

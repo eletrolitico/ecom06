@@ -9,8 +9,8 @@
 	extern FILE *yyin;
 	extern FILE *yyout;
 	
-	int lineno = 1; // initialize to 1
-	void yyerror();
+	int lineno = 1; 
+	void yyerror(char *msg);
 %}
 
 letter 		[a-zA-Z]
@@ -68,6 +68,9 @@ CCONST		(\'{print}\')|(\'\\[nftrbv]\')
 
 "\n"                    {lineno++;}
 [ \t\r\f]+              /* skip whitespace */
-.                       { yyerror("character unrecognized"); }
+.                       { 
+							strcat(yytext, " lexical error: unrecognized character");
+							yyerror(yytext);
+						}
 
 %%
