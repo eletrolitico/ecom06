@@ -1,12 +1,38 @@
 begin
     int a;
     int b;
-    a = 10;
-    b = 4;
-    if(a>b){
+    
+    output('B');
+    
+    input(a);
+    input(b);
+    
+    if(a<b){
         output('a');
     }else{
         output('b');
     }
-    output('c');
+
+    a = 1;
+    b = 0;
+
+    if (a xor b) {
+        output(1);
+    }
+    else {
+        output(0);
+    }
+
+    a = a + 9;
+    b = 10 / 2;
+
+    output(a);
+    output(b);
+    
+    output(a - b);
+    output(a * b);
+    output(a / b);
+    output(a mod b);
+
+    output('E');
 end

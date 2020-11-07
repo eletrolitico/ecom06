@@ -1,10 +1,17 @@
 begin
     int a;
-    a = 0;
-    while(a<10){
-        if((a mod 2) == 0){
-            output(a);
-        }
-        a = a + 1;
+    int b;
+
+    output('B');
+
+    a = 20;
+    b = 2;
+
+    while(a > b) {
+        a = a - 5;
+        output(a);
     }
+    
+    output('E');
+
 end

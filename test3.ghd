@@ -1,9 +1,19 @@
 begin
     char a;
+    float b;
+    float c;
+
+    output('B');
+
     input(a);
-    if(a == 'b'){
-        output('y');
-    }else{
-        output('n');
-    }
+    input(b);
+    
+    c = -40.2 / 2;
+
+    output(a);
+    output(b);
+    output(c);
+
+    output('E');
+    
 end
