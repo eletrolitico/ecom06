@@ -1,7 +1,12 @@
 begin
-    float a;
-    float b;
-    a = 3.37;
-    b = 2.0;
-    output(a>b);
+    int a;
+    int b;
+    a = 10;
+    b = 4;
+    if(a>b){
+        output('a');
+    }else{
+        output('b');
+    }
+    output('c');
 end

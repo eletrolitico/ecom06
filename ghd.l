@@ -8,7 +8,8 @@
 	#include "ghd.tab.h"
 	extern FILE *yyin;
 	extern FILE *yyout;
-	
+	extern FILE *tokout;
+
 	int lineno = 1; 
 	void yyerror(char *msg);
 %}
@@ -24,47 +25,48 @@ FCONST		"0"|{digit}*"."{digit}+
 CCONST		(\'{print}\')|(\'\\[nftrbv]\')
 
 %%
-"begin"             {return BEGINPROG;}
-"end"               {return ENDPROG;}
+"begin"             {fprintf(tokout,"BEGINPROG\n");return BEGINPROG;}
+"end"               {fprintf(tokout,"ENDPROG\n");return ENDPROG;}
 
-"+"					{ return ADD; }
-"-"					{ return SUB; }
-"*"					{ return MUL; }
-"/"					{ return DIV; }
-"mod"               { return MOD; }
-"or"				{ return OR;  }
-"and"				{ return AND; }
-"xor"				{ return XOR; }
-"not"				{ return NOT; }
-"=="				{ return EQU; }
-"!="				{ return DIF; }
-">"					{ return GRT; }
-"<"					{ return LES; }
-">="				{ return GEQ; }
-"<="				{ return LEQ; }
+"+"					{ fprintf(tokout,"ADD\n");return ADD; }
+"-"					{ fprintf(tokout,"SUB\n");return SUB; }
+"*"					{ fprintf(tokout,"MUL\n");return MUL; }
+"/"					{ fprintf(tokout,"DIV\n");return DIV; }
+"mod"               { fprintf(tokout,"MOD\n");return MOD; }
+"or"				{ fprintf(tokout,"OR\n");return OR;  }
+"and"				{ fprintf(tokout,"AND\n");return AND; }
+"xor"				{ fprintf(tokout,"XOR\n");return XOR; }
+"not"				{ fprintf(tokout,"NOT\n");return NOT; }
+"=="				{ fprintf(tokout,"EQU\n");return EQU; }
+"!="				{ fprintf(tokout,"DIF\n");return DIF; }
+">"					{ fprintf(tokout,"GRT\n");return GRT; }
+"<"					{ fprintf(tokout,"LES\n");return LES; }
+">="				{ fprintf(tokout,"GEQ\n");return GEQ; }
+"<="				{ fprintf(tokout,"LEQ\n");return LEQ; }
 
-"="                 {return ASSIGN;}
-";"                 {return SEMICOLON;}
-"("                 {return P_OPEN;}
-")"                 {return P_CLOSE;}
-"{"                 {return B_BLOCK;}
-"}"                 {return E_BLOCK;}
-"int"               {return T_INT;}
-"char"              {return T_CHAR;}
-"float"             {return T_FLOAT;}
-"input"             {return INP;}
-"output"            {return OUT;}
-"if"                {return IF;}
-"else"              {return ELSE;}
-"while"             {return WHILE;}
+"="                 { fprintf(tokout,"ASSIGN\n");return ASSIGN;}
+";"                 { fprintf(tokout,"SEMICOLON\n");return SEMICOLON;}
+"("                 { fprintf(tokout,"P_OPEN\n");return P_OPEN;}
+")"                 { fprintf(tokout,"P_CLOSE\n");return P_CLOSE;}
+"{"                 { fprintf(tokout,"B_BLOCK\n");return B_BLOCK;}
+"}"                 { fprintf(tokout,"E_BLOCK\n");return E_BLOCK;}
+"int"               { fprintf(tokout,"T_INT\n");return T_INT;}
+"char"              { fprintf(tokout,"T_CHAR\n");return T_CHAR;}
+"float"             { fprintf(tokout,"T_FLOAT\n");return T_FLOAT;}
+"input"             { fprintf(tokout,"INP\n");return INP;}
+"output"            { fprintf(tokout,"OUT\n");return OUT;}
+"if"                { fprintf(tokout,"IF\n");return IF;}
+"else"              { fprintf(tokout,"ELSE\n");return ELSE;}
+"while"             { fprintf(tokout,"WHILE\n");return WHILE;}
 
 {ID} 			{
 					yylval.id = strdup(yytext);
+					fprintf(tokout,"ID\n");
 					return ID;
 				}
-{ICONST} 		{ yylval.val.ival = atoi(yytext); return ICONST; }
-{FCONST} 		{ yylval.val.fval = atof(yytext); return FCONST; }
-{CCONST} 		{ yylval.val.cval = yytext[1];    return CCONST; }
+{ICONST} 		{ fprintf(tokout,"ICONST\n");yylval.val.ival = atoi(yytext); return ICONST; }
+{FCONST} 		{ fprintf(tokout,"FCONST\n");yylval.val.fval = atof(yytext); return FCONST; }
+{CCONST} 		{ fprintf(tokout,"CCONST\n");yylval.val.cval = yytext[1];    return CCONST; }
 
 "\n"                    {lineno++;}
 [ \t\r\f]+              /* skip whitespace */

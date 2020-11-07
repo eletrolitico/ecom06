@@ -1,7 +1,10 @@
 begin
-    float a;
-    float b;
-    a = 3;
-    b = 5.20;
-    output(a < b);
+    int a;
+    a = 0;
+    while(a<10){
+        if((a mod 2) == 0){
+            output(a);
+        }
+        a = a + 1;
+    }
 end

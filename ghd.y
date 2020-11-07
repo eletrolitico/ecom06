@@ -5,6 +5,8 @@
 	#include <string.h>
 	extern FILE *yyin;
 	extern FILE *yyout;
+	FILE *tokout;
+	FILE *comout;
 	extern int lineno;
 	extern int yylex();
 
@@ -60,7 +62,6 @@
 %type <node> loop
 %type <node> input
 %type <node> output
-%type <node> logicOp
 %type <ival> ops lOps relOps
 
 %start program
@@ -188,8 +189,8 @@ if:	IF P_OPEN expression P_CLOSE tail else
 	$$->token = IF;
 	$$->lookahead = $3;
 	$$->lookahead1 = $5;
-	$$->esq = $6;
-	$$->dir = NULL;
+	$$->esq = NULL;
+	$$->dir = $6;
 }
 ;
 
@@ -198,7 +199,8 @@ else:
 	{
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = ELSE;
-		$$->esq = $2;
+		$$->lookahead = $2;
+		$$->esq = NULL;
 		$$->dir = NULL;
 	}
 	|
@@ -220,11 +222,7 @@ loop: WHILE P_OPEN expression P_CLOSE tail
 
 tail: B_BLOCK statements E_BLOCK
 {
-	$$ = (node*)malloc(sizeof(node));
-	$$->token = TAIL;
-	$$->lookahead = $2;
-	$$->esq = NULL;
-	$$->dir = NULL;
+	$$ = $2;
 }
 ;
 
@@ -328,16 +326,20 @@ expression:
 	}
 	| P_OPEN expression P_CLOSE
 	{
-		$$ = (node*)malloc(sizeof(node));
-		$$->token = EXP;
-		$$->lookahead = $2;
-		$$->esq = NULL;
-		$$->dir = NULL;
+		$$ = $2;
 	}
 	| SUB expression
 	{
 		$$ = (node*)malloc(sizeof(node));
 		$$->token = NEXP;
+		$$->lookahead = $2;
+		$$->esq = NULL;
+		$$->dir = NULL;
+	}
+	| NOT expression
+	{
+		$$ = (node*)malloc(sizeof(node));
+		$$->token = NOT;
 		$$->lookahead = $2;
 		$$->esq = NULL;
 		$$->dir = NULL;
@@ -420,11 +422,16 @@ int main (int argc, char *argv[]){
 	// parsing
 	int flag;
 	yyin = fopen(argv[1], "r");
+	char *msg = strdup(argv[1]);
+	tokout = fopen(strcat(argv[1],"-tokens"),"w");
+
 	flag = yyparse();
 	fclose(yyin);
+	fclose(tokout);
 	
 	printf("Parsing finished!\n");
 
+	comout = fopen(strcat(msg,"-comandos"),"w");
 	yyout = fopen("out.s","w");
 
 	fprintf(yyout,"\tglobal\tmain\n");
@@ -440,20 +447,37 @@ int main (int argc, char *argv[]){
 	fprintf(yyout,"\nsection .bss\n");
 	fprintf(yyout,"tempvar1:\tRESD\t1\n");
 	fprintf(yyout,"tempvar2:\tRESD\t1\n\n");
+
 	imprime(rootDecl);
+
 	fprintf(yyout,"\nsection .text\nmain:\n");
+
 	fprintf(yyout,"\tPUSH\tEBP\n");
 	fprintf(yyout,"\tMOV\tEBP,ESP\n\n");
+
 	imprime(rootStat);
+
 	fprintf(yyout,"\n\tMOV\tEBX,0\n");
 	fprintf(yyout,"\tMOV\tEAX,1\n");
 	fprintf(yyout,"\tINT\t0x80\n");
 	
-	
-
+	fclose(comout);
 	fclose(yyout);
 
-	
-	
-	return flag;
+	if(flag != 0)
+		return flag;
+
+	flag = system("nasm -f elf32 -g -F dwarf out.s");
+
+	if(flag != 0){
+		printf("Erro do nasm\n");
+		return flag;
+	}
+
+	flag = system("gcc -m32 out.o -o out");
+
+	if(flag != 0){
+		printf("Erro do gcc\n");
+		return flag;
+	}
 }

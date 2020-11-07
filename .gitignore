@@ -5,3 +5,5 @@ lex.yy.c
 ghd
 ghd.exe
 .vscode
+*-tokens
+*-comandos

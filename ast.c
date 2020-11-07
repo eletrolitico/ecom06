@@ -6,6 +6,7 @@
 #include "ghd.tab.h"
 
 extern FILE *yyout;
+extern FILE *comout;
 
 node *rootDecl;
 node *rootStat;
@@ -18,6 +19,24 @@ void getLabel(char *c)
 {
     sprintf(c, "PK%d", label++);
 }
+
+char *getTipo(int n)
+{
+    switch (n)
+    {
+    case CHAR:
+        return "CHAR";
+    case INT:
+        return "INT";
+    case FLOAT:
+        return "REAL";
+
+    default:
+        return "UNDEFINED";
+    }
+}
+
+char laTmp[10];
 
 void imprime(node *n)
 {
@@ -32,6 +51,8 @@ void imprime(node *n)
         fprintf(yyout, "\n");
         break;
     case ID:
+        fprintf(comout, "DECLARACAO %s\n", getTipo(n->tipo));
+
         if (n->tipo == CHAR)
             fprintf(yyout, "%s:\tRESB\t1\n", n->id);
         else
@@ -39,6 +60,8 @@ void imprime(node *n)
         break;
 
     case ASSIGN:
+        fprintf(comout, "COMANDO ATRIBUICAO\n");
+
         imprime(n->lookahead);
 
         if (n->tipo == FLOAT)
@@ -130,11 +153,32 @@ void imprime(node *n)
         imprime(n->lookahead);
         imprime(n->lookahead1);
 
-        if (n->lookahead->tipo != FLOAT && n->lookahead1->tipo != FLOAT)
+        if (((n->lookahead->tipo == FLOAT) || (n->lookahead1->tipo == FLOAT)) && (n->op == MOD)) //deu ruim
+        {
+            fprintf(stderr, "Nao pode mod com operandos nao inteiros");
+            exit(1);
+        }
+
+        if (n->lookahead->tipo != FLOAT && n->lookahead1->tipo != FLOAT) // tudo int
         {
             n->tipo = INT;
-            getOp(msg, n->op);
-            fprintf(yyout, "\t%s\tEAX,EBX\n", msg);
+            if (n->op == DIV || n->op == MOD)
+            {
+                fprintf(yyout, "\tMOV\tEDX,0\n", msg);
+                fprintf(yyout, "\tIDIV\tEBX\n", msg);
+            }
+            else if (n->op == MUL)
+            {
+                fprintf(yyout, "\tIMUL\tEBX\n", msg);
+            }
+            else
+            {
+                getOp(msg, n->op);
+                fprintf(yyout, "\t%s\tEAX,EBX\n", msg);
+            }
+            if (n->op == MOD)
+                fprintf(yyout, "\tMOV\tEAX,EDX\n");
+
             if (n->reg == 'b')
                 fprintf(yyout, "\tMOV\tEBX,EAX\n");
         }
@@ -196,30 +240,26 @@ void imprime(node *n)
             getCmp(msg, n->op);
         }
         else
-        { 
+        {
             if (n->lookahead1->tipo != FLOAT) // a é float
             {
                 fprintf(yyout, "\tMOV\t[tempvar2],EBX\n");
                 fprintf(yyout, "\tFILD\tdword [tempvar2]\n");
                 fprintf(yyout, "\tFLD\tdword [tempvar1]\n");
-                fprintf(yyout, "\tFCOMIP\n");
-                fprintf(yyout, "\tFSTP\tST0\n");
             }
             else if (n->lookahead->tipo != FLOAT) // b é float
             {
                 fprintf(yyout, "\tFLD\tdword [tempvar2]\n");
                 fprintf(yyout, "\tMOV\t[tempvar1],EAX\n");
                 fprintf(yyout, "\tFILD\tdword [tempvar1]\n");
-                fprintf(yyout, "\tFCOMIP\n");
-                fprintf(yyout, "\tFSTP\tST0\n");
             }
             else // os 2 são float
             {
                 fprintf(yyout, "\tFLD\tdword [tempvar2]\n");
                 fprintf(yyout, "\tFLD\tdword [tempvar1]\n");
-                fprintf(yyout, "\tFCOMIP\n");
-                fprintf(yyout, "\tFSTP\tST0\n");
             }
+            fprintf(yyout, "\tFCOMIP\n");
+            fprintf(yyout, "\tFSTP\tST0\n");
             getFloatCmp(msg, n->op);
         }
 
@@ -240,7 +280,100 @@ void imprime(node *n)
         fprintf(yyout, "%s:\n", la2);
         break;
 
+    case LOP:
+        n->lookahead->reg = 'a';
+        n->lookahead1->reg = 'b';
+        imprime(n->lookahead);
+        imprime(n->lookahead1);
+
+        getLabel(la1);
+        getLabel(la2);
+        n->tipo = INT;
+        if (n->lookahead->tipo == FLOAT)
+            fprintf(yyout, "\tMOV\tEAX,[tempvar1]");
+        if (n->lookahead1->tipo == FLOAT)
+            fprintf(yyout, "\tMOV\tEBX,[tempvar2]");
+
+        switch (n->op)
+        {
+        case AND:
+            fprintf(yyout, "\tCMP\tEAX,0\n");
+            fprintf(yyout, "\tJE\t%s\n", la1);
+            fprintf(yyout, "\tCMP\tEBX,0\n");
+            fprintf(yyout, "\tJE\t%s\n", la1);
+
+            if (n->reg == 'a')
+                fprintf(yyout, "\tMOV\tEAX,1\n");
+            else
+                fprintf(yyout, "\tMOV\tEBX,1\n");
+
+            fprintf(yyout, "\tJMP\t%s\n", la2);
+
+            if (n->reg == 'a')
+                fprintf(yyout, "%s:\tMOV\tEAX,0\n", la1);
+            else
+                fprintf(yyout, "%s:\tMOV\tEBX,0\n", la1);
+            fprintf(yyout, "%s:", la2);
+            break;
+        case OR:
+            fprintf(yyout, "\tCMP\tEAX,1\n");
+            fprintf(yyout, "\tJE\t%s\n", la1);
+            fprintf(yyout, "\tCMP\tEBX,1\n");
+            fprintf(yyout, "\tJE\t%s\n", la1);
+
+            if (n->reg == 'a')
+                fprintf(yyout, "\tMOV\tEAX,0\n");
+            else
+                fprintf(yyout, "\tMOV\tEBX,0\n");
+
+            fprintf(yyout, "\tJMP\t%s\n", la2);
+
+            if (n->reg == 'a')
+                fprintf(yyout, "%s:\tMOV\tEAX,1\n", la1);
+            else
+                fprintf(yyout, "%s:\tMOV\tEBX,1\n", la1);
+            fprintf(yyout, "%s:", la2);
+            break;
+        case XOR:
+            fprintf(yyout, "\tCMP\tEAX,EBX\n");
+            fprintf(yyout, "\tJE\t%s\n", la1);
+
+            if (n->reg == 'a')
+                fprintf(yyout, "\tMOV\tEAX,1\n");
+            else
+                fprintf(yyout, "\tMOV\tEBX,1\n");
+
+            fprintf(yyout, "\tJMP\t%s\n", la2);
+
+            if (n->reg == 'a')
+                fprintf(yyout, "%s:\tMOV\tEAX,0\n", la1);
+            else
+                fprintf(yyout, "%s:\tMOV\tEBX,0\n", la1);
+            fprintf(yyout, "%s:", la2);
+            break;
+        }
+
+        break;
+    case NOT:
+        n->lookahead->reg = 'a';
+        imprime(n->lookahead);
+
+        getLabel(la1);
+        getLabel(la2);
+        n->tipo = INT;
+        if (n->lookahead->tipo == FLOAT)
+            fprintf(yyout, "\tMOV\tEAX,[tempvar1]\n");
+        fprintf(yyout, "\tCMP\tEAX,0\n");
+        fprintf(yyout, "\tJE\t%s\n", la1);
+        fprintf(yyout, "\tMOV\tEAX,0\n");
+        fprintf(yyout, "\tJMP\t%s\n", la2);
+        fprintf(yyout, "%s:\tMOV\tEAX,1\n", la1);
+        fprintf(yyout, "%s:\n", la2);
+
+        break;
     case OUT:
+        fprintf(comout, "COMANDO SAIDA\n");
+
         imprime(n->lookahead);
         switch (n->tipo)
         {
@@ -271,6 +404,8 @@ void imprime(node *n)
         }
         break;
     case INP:
+        fprintf(comout, "COMANDO ENTRADA\n");
+
         switch (n->tipo)
         {
         case INT:
@@ -337,6 +472,55 @@ void imprime(node *n)
             }
             break;
         }
+        break;
+    case IF:
+        fprintf(comout, "COMANDO CONDICIONAL\n");
+
+        n->lookahead->reg = 'a';
+        imprime(n->lookahead);
+        getLabel(la1);
+        if (n->lookahead->tipo == FLOAT)
+            fprintf(yyout, "\tMOV\tEAX,[tempvar1]\n");
+
+        fprintf(yyout, "\tCMP\tEAX,0\n");
+        fprintf(yyout, "\tJE\t%s\n", la1);
+        imprime(n->lookahead1);
+        if (n->dir != NULL && n->dir->token == ELSE)
+        {
+            getLabel(la2);
+            fprintf(yyout, "\tJMP\t%s\n", la2);
+            strcpy(laTmp, la2);
+        }
+        fprintf(yyout, "%s:\n", la1);
+        fprintf(comout, "FIM CONDICIONAL\n");
+        break;
+    case ELSE:
+        fprintf(comout, "ELSE\n");
+        imprime(n->lookahead);
+        fprintf(yyout, "%s:\n", laTmp);
+        fprintf(comout, "FIM ELSE\n");
+        break;
+    case WHILE:
+        fprintf(comout, "COMANDO REPETICAO\n");
+
+        n->lookahead->reg = 'a';
+        getLabel(la1);
+        getLabel(la2);
+
+        fprintf(yyout, "%s:\n", la1);
+        imprime(n->lookahead);
+        if (n->lookahead->tipo == FLOAT)
+            fprintf(yyout, "\tMOV\tEAX,[tempvar1]\n");
+
+        fprintf(yyout, "\tCMP\tEAX,0\n");
+        fprintf(yyout, "\tJE\t%s\n", la2);
+
+        imprime(n->lookahead1);
+        fprintf(yyout, "\tJMP\t%s\n", la1);
+
+        fprintf(yyout, "%s:\n", la2);
+        fprintf(comout, "FIM REPETICAO\n");
+
         break;
     default:
         fprintf(yyout, "Esqueceu de implementar: %d", n->token);
@@ -492,5 +676,3 @@ void getFloatCmp(char *msg, int op)
         return;
     }
 }
-
-

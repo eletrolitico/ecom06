@@ -1,0 +1,9 @@
+begin
+    char a;
+    input(a);
+    if(a == 'b'){
+        output('y');
+    }else{
+        output('n');
+    }
+end

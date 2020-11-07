@@ -44,8 +44,10 @@ typedef struct list_t
 void imprime(node *n);
 void insert(char *id, TipoVar t);
 void getOp(char *msg, int op);
-void getCmp(char *msg, int op);
 void getFloatOp(char *msg, int op);
+void getCmp(char *msg, int op);
+void getFloatCmp(char *msg, int op);
+void getLop(char *msg, int op);
 TipoVar lookup(char *id);
 
 #endif
