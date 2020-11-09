@@ -375,7 +375,7 @@ void imprime(node *n)
         fprintf(comout, "COMANDO SAIDA\n");
 
         imprime(n->lookahead);
-        switch (n->tipo)
+        switch (n->lookahead->tipo)
         {
         case INT:
             fprintf(yyout, "\tPUSH\tEAX\n");
@@ -391,7 +391,6 @@ void imprime(node *n)
             break;
         case FLOAT:
             fprintf(yyout, "\tSUB\tESP,8\n");
-            fprintf(yyout, "\tMOV\t[tempvar1],EAX\n");
             fprintf(yyout, "\tFLD\tdword [tempvar1]\n");
             fprintf(yyout, "\tFSTP\tqword [ESP]\n");
             fprintf(yyout, "\tPUSH\tfloatFmt\n");
