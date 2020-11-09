@@ -25,50 +25,50 @@ FCONST		"0"|{digit}*"."{digit}+
 CCONST		(\'{print}\')|(\'\\[nftrbv]\')
 
 %%
-"begin"             {fprintf(tokout,"BEGINPROG\n");return BEGINPROG;}
-"end"               {fprintf(tokout,"ENDPROG\n");return ENDPROG;}
+"begin"             {fprintf(tokout,"BEGINPROG ");return BEGINPROG;}
+"end"               {fprintf(tokout,"ENDPROG ");return ENDPROG;}
 
-"+"					{ fprintf(tokout,"ADD\n");return ADD; }
-"-"					{ fprintf(tokout,"SUB\n");return SUB; }
-"*"					{ fprintf(tokout,"MUL\n");return MUL; }
-"/"					{ fprintf(tokout,"DIV\n");return DIV; }
-"mod"               { fprintf(tokout,"MOD\n");return MOD; }
-"or"				{ fprintf(tokout,"OR\n");return OR;  }
-"and"				{ fprintf(tokout,"AND\n");return AND; }
-"xor"				{ fprintf(tokout,"XOR\n");return XOR; }
-"not"				{ fprintf(tokout,"NOT\n");return NOT; }
-"=="				{ fprintf(tokout,"EQU\n");return EQU; }
-"!="				{ fprintf(tokout,"DIF\n");return DIF; }
-">"					{ fprintf(tokout,"GRT\n");return GRT; }
-"<"					{ fprintf(tokout,"LES\n");return LES; }
-">="				{ fprintf(tokout,"GEQ\n");return GEQ; }
-"<="				{ fprintf(tokout,"LEQ\n");return LEQ; }
+"+"					{ fprintf(tokout,"ADD ");return ADD; }
+"-"					{ fprintf(tokout,"SUB ");return SUB; }
+"*"					{ fprintf(tokout,"MUL ");return MUL; }
+"/"					{ fprintf(tokout,"DIV ");return DIV; }
+"mod"               { fprintf(tokout,"MOD ");return MOD; }
+"or"				{ fprintf(tokout,"OR ");return OR;  }
+"and"				{ fprintf(tokout,"AND ");return AND; }
+"xor"				{ fprintf(tokout,"XOR ");return XOR; }
+"not"				{ fprintf(tokout,"NOT ");return NOT; }
+"=="				{ fprintf(tokout,"EQU ");return EQU; }
+"!="				{ fprintf(tokout,"DIF ");return DIF; }
+">"					{ fprintf(tokout,"GRT ");return GRT; }
+"<"					{ fprintf(tokout,"LES ");return LES; }
+">="				{ fprintf(tokout,"GEQ ");return GEQ; }
+"<="				{ fprintf(tokout,"LEQ ");return LEQ; }
 
-"="                 { fprintf(tokout,"ASSIGN\n");return ASSIGN;}
-";"                 { fprintf(tokout,"SEMICOLON\n");return SEMICOLON;}
-"("                 { fprintf(tokout,"P_OPEN\n");return P_OPEN;}
-")"                 { fprintf(tokout,"P_CLOSE\n");return P_CLOSE;}
-"{"                 { fprintf(tokout,"B_BLOCK\n");return B_BLOCK;}
-"}"                 { fprintf(tokout,"E_BLOCK\n");return E_BLOCK;}
-"int"               { fprintf(tokout,"T_INT\n");return T_INT;}
-"char"              { fprintf(tokout,"T_CHAR\n");return T_CHAR;}
-"float"             { fprintf(tokout,"T_FLOAT\n");return T_FLOAT;}
-"input"             { fprintf(tokout,"INP\n");return INP;}
-"output"            { fprintf(tokout,"OUT\n");return OUT;}
-"if"                { fprintf(tokout,"IF\n");return IF;}
-"else"              { fprintf(tokout,"ELSE\n");return ELSE;}
-"while"             { fprintf(tokout,"WHILE\n");return WHILE;}
+"="                 { fprintf(tokout,"ASSIGN ");return ASSIGN;}
+";"                 { fprintf(tokout,"SEMICOLON ");return SEMICOLON;}
+"("                 { fprintf(tokout,"P_OPEN ");return P_OPEN;}
+")"                 { fprintf(tokout,"P_CLOSE ");return P_CLOSE;}
+"{"                 { fprintf(tokout,"B_BLOCK ");return B_BLOCK;}
+"}"                 { fprintf(tokout,"E_BLOCK ");return E_BLOCK;}
+"int"               { fprintf(tokout,"T_INT ");return T_INT;}
+"char"              { fprintf(tokout,"T_CHAR ");return T_CHAR;}
+"float"             { fprintf(tokout,"T_FLOAT ");return T_FLOAT;}
+"input"             { fprintf(tokout,"INP ");return INP;}
+"output"            { fprintf(tokout,"OUT ");return OUT;}
+"if"                { fprintf(tokout,"IF ");return IF;}
+"else"              { fprintf(tokout,"ELSE ");return ELSE;}
+"while"             { fprintf(tokout,"WHILE ");return WHILE;}
 
 {ID} 			{
 					yylval.id = strdup(yytext);
-					fprintf(tokout,"ID\n");
+					fprintf(tokout,"ID ");
 					return ID;
 				}
-{ICONST} 		{ fprintf(tokout,"ICONST\n");yylval.val.ival = atoi(yytext); return ICONST; }
-{FCONST} 		{ fprintf(tokout,"FCONST\n");yylval.val.fval = atof(yytext); return FCONST; }
-{CCONST} 		{ fprintf(tokout,"CCONST\n");yylval.val.cval = yytext[1];    return CCONST; }
+{ICONST} 		{ fprintf(tokout,"ICONST ");yylval.val.ival = atoi(yytext); return ICONST; }
+{FCONST} 		{ fprintf(tokout,"FCONST ");yylval.val.fval = atof(yytext); return FCONST; }
+{CCONST} 		{ fprintf(tokout,"CCONST ");yylval.val.cval = yytext[1];    return CCONST; }
 
-"\n"                    {lineno++;}
+"\n"                    {fprintf(tokout,"\n");lineno++;}
 [ \t\r\f]+              /* skip whitespace */
 .                       { 
 							strcat(yytext, " lexical error: unrecognized character");
