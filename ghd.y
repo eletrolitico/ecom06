@@ -327,6 +327,7 @@ expression:
 	| P_OPEN expression P_CLOSE
 	{
 		$$ = $2;
+		$$->hasParen = 1;
 	}
 	| SUB expression
 	{

@@ -8,7 +8,7 @@ begin
     input(a);
     input(b);
     
-    c = -40.2 / 2;
+    c = -(40.2 / 2) + 1;
 
     output(a);
     output(b);

@@ -26,6 +26,7 @@ typedef struct node
 
 	// uso de registro
 	char reg;
+	char hasParen;
 
 	//operacao
 	int op;
@@ -48,6 +49,7 @@ void getFloatOp(char *msg, int op);
 void getCmp(char *msg, int op);
 void getFloatCmp(char *msg, int op);
 void getLop(char *msg, int op);
+void getOpCom(char *msg, int op);
 TipoVar lookup(char *id);
 
 #endif

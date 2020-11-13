@@ -51,7 +51,7 @@ void imprime(node *n)
         fprintf(yyout, "\n");
         break;
     case ID:
-        fprintf(comout, "DECLARACAO %s\n", getTipo(n->tipo));
+        fprintf(comout, "%s = DECLARACAO %s\n", n->id, getTipo(n->tipo));
 
         if (n->tipo == CHAR)
             fprintf(yyout, "%s:\tRESB\t1\n", n->id);
@@ -60,9 +60,9 @@ void imprime(node *n)
         break;
 
     case ASSIGN:
-        fprintf(comout, "COMANDO ATRIBUICAO\n");
-
+        fprintf(comout, "COMANDO ATRIBUICAO %s = ", n->id);
         imprime(n->lookahead);
+        fprintf(comout, "\n");
 
         if (n->tipo == FLOAT)
         {
@@ -102,6 +102,7 @@ void imprime(node *n)
         }
         break;
     case ICONST:
+        fprintf(comout, "ICONST");
         if (n->reg == 'a')
             fprintf(yyout, "\tMOV\tEAX,%d\n", n->val.ival);
         else
@@ -109,6 +110,7 @@ void imprime(node *n)
         break;
 
     case FCONST:
+        fprintf(comout, "FCONST");
         if (n->reg == 'a')
             fprintf(yyout, "\tMOV\tdword [tempvar1],__float32__(%f)\n", n->val.fval);
         else
@@ -116,6 +118,7 @@ void imprime(node *n)
         break;
 
     case CCONST:
+        fprintf(comout, "CCONST");
         if (n->reg == 'a')
             fprintf(yyout, "\tMOV\tAL,'%c'\n", n->val.cval);
         else
@@ -123,6 +126,8 @@ void imprime(node *n)
         break;
 
     case VAR:
+        fprintf(comout, "VAR(%s)", n->id);
+
         if (n->tipo != FLOAT)
         {
 
@@ -150,8 +155,17 @@ void imprime(node *n)
     case EXPS:
         n->lookahead->reg = 'a';
         n->lookahead1->reg = 'b';
+
+        if (n->hasParen)
+            fprintf(comout, "(");
+
         imprime(n->lookahead);
+        getOpCom(msg, n->op);
+        fprintf(comout, " %s ", msg);
         imprime(n->lookahead1);
+
+        if (n->hasParen)
+            fprintf(comout, ")");
 
         if (((n->lookahead->tipo == FLOAT) || (n->lookahead1->tipo == FLOAT)) && (n->op == MOD)) //deu ruim
         {
@@ -228,8 +242,17 @@ void imprime(node *n)
     case ROP:
         n->lookahead->reg = 'a';
         n->lookahead1->reg = 'b';
+
+        if (n->hasParen)
+            fprintf(comout, "(");
+
         imprime(n->lookahead);
+        getOpCom(msg, n->op);
+        fprintf(comout, " %s ", msg);
         imprime(n->lookahead1);
+
+        if (n->hasParen)
+            fprintf(comout, ")");
 
         getLabel(la1);
         getLabel(la2);
@@ -283,8 +306,17 @@ void imprime(node *n)
     case LOP:
         n->lookahead->reg = 'a';
         n->lookahead1->reg = 'b';
+
+        if (n->hasParen)
+            fprintf(comout, "(");
+
         imprime(n->lookahead);
+        getOpCom(msg, n->op);
+        fprintf(comout, " %s ", msg);
         imprime(n->lookahead1);
+
+        if (n->hasParen)
+            fprintf(comout, ")");
 
         getLabel(la1);
         getLabel(la2);
@@ -356,6 +388,7 @@ void imprime(node *n)
         break;
     case NOT:
         n->lookahead->reg = 'a';
+        fprintf(comout, "not ");
         imprime(n->lookahead);
 
         getLabel(la1);
@@ -372,9 +405,9 @@ void imprime(node *n)
 
         break;
     case OUT:
-        fprintf(comout, "COMANDO SAIDA\n");
-
+        fprintf(comout, "COMANDO SAIDA(");
         imprime(n->lookahead);
+        fprintf(comout, ")\n");
         switch (n->lookahead->tipo)
         {
         case INT:
@@ -403,7 +436,7 @@ void imprime(node *n)
         }
         break;
     case INP:
-        fprintf(comout, "COMANDO ENTRADA\n");
+        fprintf(comout, "COMANDO ENTRADA(VAR(%s))\n", n->id);
 
         switch (n->tipo)
         {
@@ -431,6 +464,7 @@ void imprime(node *n)
         }
         break;
     case NEXP:
+        fprintf(comout, "-");
         if (n->lookahead->token == ICONST)
         {
             if (n->reg == 'a')
@@ -500,14 +534,16 @@ void imprime(node *n)
         fprintf(comout, "FIM ELSE\n");
         break;
     case WHILE:
-        fprintf(comout, "COMANDO REPETICAO\n");
 
         n->lookahead->reg = 'a';
         getLabel(la1);
         getLabel(la2);
 
         fprintf(yyout, "%s:\n", la1);
+        fprintf(comout, "COMANDO REPETICAO(");
         imprime(n->lookahead);
+        fprintf(comout, ")\n");
+
         if (n->lookahead->tipo == FLOAT)
             fprintf(yyout, "\tMOV\tEAX,[tempvar1]\n");
 
@@ -671,6 +707,60 @@ void getFloatCmp(char *msg, int op)
 
     default:
         printf("Erro, getFloatCmp de %d", op);
+        strcpy(msg, "!ERROR!");
+        return;
+    }
+}
+
+void getOpCom(char *msg, int op)
+{
+    switch (op)
+    {
+    case ADD:
+        strcpy(msg, "ADD");
+        return;
+    case SUB:
+        strcpy(msg, "SUB");
+        return;
+    case MUL:
+        strcpy(msg, "MUL");
+        return;
+    case DIV:
+        strcpy(msg, "DIV");
+        return;
+    case AND:
+        strcpy(msg, "AND");
+        return;
+    case OR:
+        strcpy(msg, "OR");
+        return;
+    case XOR:
+        strcpy(msg, "XOR");
+        return;
+    case EQU:
+        strcpy(msg, "EQU");
+        return;
+    case DIF:
+        strcpy(msg, "DIF");
+        return;
+    case GRT:
+        strcpy(msg, "GRT");
+        return;
+    case GEQ:
+        strcpy(msg, "GEQ");
+        return;
+    case LES:
+        strcpy(msg, "LES");
+        return;
+    case LEQ:
+        strcpy(msg, "LEQ");
+        return;
+    case MOD:
+        strcpy(msg, "MOD");
+        return;
+
+    default:
+        printf("Erro, getopcom de %d", op);
         strcpy(msg, "!ERROR!");
         return;
     }
