@@ -43,11 +43,10 @@
 %left OR
 %left AND
 %left EQU
-%left REL
 %left ADD
 %left SUB
 %left MUL DIV
-%right NOT MINUS
+%right NOT
 %left P_OPEN P_CLOSE B_BLOCK E_BLOCK
 
 /* rule (non-terminal) definitions */
