@@ -68,15 +68,15 @@ void imprime(node *n)
         {
             if (n->lookahead->tipo == FLOAT)
             {
-                fprintf(yyout, "\tMOV\tEAX,[tempvar1]\n", n->id);
+                fprintf(yyout, "\tMOV\tEAX,[tempvar1]\n");
                 fprintf(yyout, "\tMOV\t[%s],EAX\n", n->id);
             }
             else
             {
-                fprintf(yyout, "\tMOV\t[tempvar1],EAX\n", n->id);
-                fprintf(yyout, "\tFILD\tdword [tempvar1]\n", n->id);
-                fprintf(yyout, "\tFSTP\tdword [tempvar1]\n", n->id);
-                fprintf(yyout, "\tMOV\tEAX,[tempvar1]\n", n->id);
+                fprintf(yyout, "\tMOV\t[tempvar1],EAX\n");
+                fprintf(yyout, "\tFILD\tdword [tempvar1]\n");
+                fprintf(yyout, "\tFSTP\tdword [tempvar1]\n");
+                fprintf(yyout, "\tMOV\tEAX,[tempvar1]\n");
                 fprintf(yyout, "\tMOV\t[%s],EAX\n", n->id);
             }
         }
@@ -84,7 +84,7 @@ void imprime(node *n)
         {
             if (n->lookahead->tipo == FLOAT)
             {
-                fprintf(yyout, "\tFLD\tdword [tempvar1]\n", n->id);
+                fprintf(yyout, "\tFLD\tdword [tempvar1]\n");
                 if (n->tipo == INT)
                     fprintf(yyout, "\tFISTP\tdword [%s]\n", n->id);
 
@@ -142,12 +142,12 @@ void imprime(node *n)
             {
 
                 fprintf(yyout, "\tMOV\tEAX,[%s]\n", n->id);
-                fprintf(yyout, "\tMOV\t[tempvar1],EAX\n", n->id);
+                fprintf(yyout, "\tMOV\t[tempvar1],EAX\n");
             }
             else
             {
                 fprintf(yyout, "\tMOV\tEBX,[%s]\n", n->id);
-                fprintf(yyout, "\tMOV\t[tempvar2],EBX\n", n->id);
+                fprintf(yyout, "\tMOV\t[tempvar2],EBX\n");
             }
         }
         break;
@@ -178,12 +178,12 @@ void imprime(node *n)
             n->tipo = INT;
             if (n->op == DIV || n->op == MOD)
             {
-                fprintf(yyout, "\tMOV\tEDX,0\n", msg);
-                fprintf(yyout, "\tIDIV\tEBX\n", msg);
+                fprintf(yyout, "\tMOV\tEDX,0\n");
+                fprintf(yyout, "\tIDIV\tEBX\n");
             }
             else if (n->op == MUL)
             {
-                fprintf(yyout, "\tIMUL\tEBX\n", msg);
+                fprintf(yyout, "\tIMUL\tEBX\n");
             }
             else
             {
@@ -507,10 +507,12 @@ void imprime(node *n)
         }
         break;
     case IF:
-        fprintf(comout, "COMANDO CONDICIONAL\n");
+        fprintf(comout, "COMANDO CONDICIONAL(");
 
         n->lookahead->reg = 'a';
         imprime(n->lookahead);
+        fprintf(comout, ")\n");
+
         getLabel(la1);
         if (n->lookahead->tipo == FLOAT)
             fprintf(yyout, "\tMOV\tEAX,[tempvar1]\n");
