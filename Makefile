@@ -10,4 +10,5 @@ ghd: lex.yy.c ghd.tab.c ghd.tab.h ast.h ast.c
 	gcc -g -Wall -o ghd lex.yy.c ghd.tab.c ast.c
 
 clean:
-	rm ghd ghd.tab.c lex.yy.c ghd.tab.h ghd.output
+	@echo "cleaning files"
+	@rm -f ghd ghd.tab.c lex.yy.c ghd.tab.h ghd.output *-comandos *-tokens out*
