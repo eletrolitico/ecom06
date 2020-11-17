@@ -571,10 +571,16 @@ void insert(char *id, TipoVar t)
 {
     list_t *aux = lista, *ant = NULL;
 
-    while (aux != NULL)
+    while (aux != NULL && strcmp(id, aux->id) != 0)
     {
         ant = aux;
         aux = aux->prox;
+    }
+
+    if (aux)
+    {
+        printf("variável %s ja declarada\n", id);
+        exit(1);
     }
 
     if (!ant)
@@ -601,7 +607,10 @@ TipoVar lookup(char *id)
         aux = aux->prox;
 
     if (!aux)
-        return -1;
+    {
+        printf("variavel %s não declarada", id);
+        exit(1);
+    }
 
     return aux->tipo;
 }
