@@ -20,9 +20,9 @@ alnum 		{letter}|{digit}
 print		[ -~]
 
 ID 			{letter}+{alnum}*
-ICONST		"0"|[0-9]{digit}*
-FCONST		"0"|{digit}*"."{digit}+
-CCONST		(\'{print}\')|(\'\\[nftrbv]\')
+ICONST		{digit}+
+FCONST		{digit}+"."{digit}+
+CCONST		(\'{print}\')
 
 %%
 "begin"             {fprintf(tokout,"BEGINPROG ");return BEGINPROG;}
