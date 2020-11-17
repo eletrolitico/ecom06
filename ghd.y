@@ -15,7 +15,7 @@
 	extern node *rootDecl;
 	extern node *rootStat;
 
-	void yyerror();
+	void yyerror(char *msg);
 %}
 
 /* YYSTYPE union */
@@ -407,9 +407,9 @@ assigment: ID {idTemp = yylval.id;} ASSIGN expression SEMICOLON
 
 %%
 
-void yyerror ()
+void yyerror (char *msg)
 {
-  fprintf(stderr, "Syntax error at line %d\n", lineno);
+  fprintf(stderr, "%s: error at line %d\n", msg, lineno);
   exit(1);
 }
 
